@@ -1,0 +1,9 @@
+# ficheiros compilados
+bin/
+*.class
+
+# VSCode
+.vscode/
+
+# macOS (nunca se sabe)
+.DS_Store
