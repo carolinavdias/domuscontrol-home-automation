@@ -14,14 +14,12 @@ import utils.SimulatedClock;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import exceptions.DeviceNotFoundException;
-import exceptions.RoomNotFoundException;
-import model.devices.Device;
 
 // classe principal do sistema, ainda em construçao!! :)
 // por agora trata de UTILIZADORES, CASAS e DIVISOES
@@ -43,7 +41,7 @@ public class DomusController implements Serializable {
         this.idUtilizadorAtual = null;
     }
 
-
+    //==========================================================
     // GESTAO DE UTILIZADORES
 
     // regista um utilizador no sistema
@@ -78,7 +76,7 @@ public class DomusController implements Serializable {
     }
 
 
-
+    //==========================================================
     // GESTAO DE CASAS
 
     // cria uma nova casa, quem a cria fica automaticamente admin dela
@@ -116,7 +114,7 @@ public class DomusController implements Serializable {
     }
 
 
-
+    //==========================================================
     // GESTAO DE DIVISOES
 
     // adiciona uma divisao a uma casa, so admins podem fazer isto
@@ -131,7 +129,7 @@ public class DomusController implements Serializable {
         h.adicionarDivisao(r);
     }
 
-
+    //==========================================================
     // SIMULAÇÃO DO TEMPO
 
     public void avancarTempo(long minutos) {
@@ -139,6 +137,7 @@ public class DomusController implements Serializable {
     }
 
 
+    //==========================================================    
     // GESTAO DE DISPOSITIVOS
 
     // adiciona um dispositivo a uma divisao de uma casa
@@ -192,15 +191,96 @@ public class DomusController implements Serializable {
     }
 
 
+    //==========================================================
+    // ESTATÍSTICAS
+
+    // devolve a casa que mais consome energia em todo o sistema
+    public House getCasaQueMaisConsome() {
+        return casas.values().stream()
+            .max(Comparator.comparingDouble(House::getConsumoTotal))
+            .map(House::new)
+            .orElse(null);
+    }
+
+    // devolve os 3 dispositivos mais utilizados de uma casa, por número de activações
+    public List<Device> getTop3DispositivosPorActivacoes(String idCasa)
+            throws HouseNotFoundException {
+
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+
+        // junta todos os dispositivos de todas as divisões da casa
+        List<Device> todos = new ArrayList<>();
+        for (Room r : h.getDivisoes()) {
+            todos.addAll(r.getDispositivos());
+        }
+
+        // ordena por número de activações, do maior para o menor, e devolve os 3 primeiros
+        return todos.stream()
+            .sorted(Comparator.comparingInt(Device::getNumActivacoes).reversed())
+            .limit(3)
+            .collect(Collectors.toList());
+    }
+
+    // devolve os 3 dispositivos mais utilizados de uma casa, por tempo total ligado
+    public List<Device> getTop3DispositivosPorTempo(String idCasa)
+            throws HouseNotFoundException {
+
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+
+        List<Device> todos = new ArrayList<>();
+        for (Room r : h.getDivisoes()) {
+            todos.addAll(r.getDispositivos());
+        }
+
+        return todos.stream()
+            .sorted(Comparator.comparingLong(Device::getTotalMinutosLigado).reversed())
+            .limit(3)
+            .collect(Collectors.toList());
+    }
+
+    // devolve as 3 divisões com mais dispositivos em todo o sistema
+    // inclui o nome da casa a que cada divisão pertence
+    public List<String> getTop3DivisoesPorDispositivos() {
+        List<String[]> pares = new ArrayList<>();
+
+        // percorre todas as casas e todas as divisões e guarda pares (descrição, nº dispositivos)
+        for (House h : casas.values()) {
+            for (Room r : h.getDivisoes()) {
+                pares.add(new String[]{
+                    h.getNome() + " > " + r.getNome(),
+                    String.valueOf(r.getNumDispositivos())
+                });
+            }
+        }
+
+        // ordena pelo número de dispositivos, do maior para o menor, e devolve os 3 primeiros
+        return pares.stream()
+            .sorted((a, b) -> Integer.compare(
+                Integer.parseInt(b[1]), Integer.parseInt(a[1])))
+            .limit(3)
+            .map(p -> p[0] + " | Dispositivos: " + p[1])
+            .collect(Collectors.toList());
+    }
+
+    // método de consulta extra: consumo total de uma casa específica
+    public double getConsumoTotalDaCasa(String idCasa) throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+        return h.getConsumoTotal();
+    }
+
+
     //===========================================================
     // TO DO:
-    // estatisticas (casa que mais consome, top 3 dispositivos, top 3 divisoes)
-    // automacoes, escalonamentos e execucao de cenarios
-    // gravar e carregar estado em ficheiro binario
+    // automações, escalonamentos e execução de cenários
+    // gravar e carregar estado em ficheiro binário
     //===========================================================
 
-
     
+
+    //==========================================================
     // METODO AUXILIAR DE PERMISSOES
 
     // verifica se o utilizador atual e admin da casa indicada
@@ -213,6 +293,6 @@ public class DomusController implements Serializable {
 
         if (!atual.isAdmin(idCasa))
             throw new InvalidPermissionException(
-                "Não tens permissão de administrador para esta casa.");
+                "Não tens permissão de administrador para esta casa!");
     }
 }
