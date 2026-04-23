@@ -1,8 +1,11 @@
 package controller;
 
+import exceptions.DeviceNotFoundException;
 import exceptions.HouseNotFoundException;
 import exceptions.InvalidPermissionException;
+import exceptions.RoomNotFoundException;
 import exceptions.UserNotFoundException;
+import model.devices.Device;
 import model.house.House;
 import model.house.Room;
 import model.users.Role;
@@ -15,6 +18,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import exceptions.DeviceNotFoundException;
+import exceptions.RoomNotFoundException;
+import model.devices.Device;
 
 // classe principal do sistema, ainda em construçao!! :)
 // por agora trata de UTILIZADORES, CASAS e DIVISOES
@@ -132,11 +139,63 @@ public class DomusController implements Serializable {
     }
 
 
+    // GESTAO DE DISPOSITIVOS
+
+    // adiciona um dispositivo a uma divisao de uma casa
+    // so admins podem fazer isto!! 
+    public void adicionarDispositivo(String idCasa, String idDivisao, Device d)
+            throws HouseNotFoundException, RoomNotFoundException,
+                   InvalidPermissionException, UserNotFoundException {
+
+        verificarPermissaoAdmin(idCasa);
+
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+
+        Room r = h.getDivisao(idDivisao);
+        if (r == null) throw new RoomNotFoundException(idDivisao);
+
+        r.adicionarDispositivo(d);
+    }
+
+    // liga um dispositivo especifico numa divisao
+    public void ligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
+            throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
+        Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
+        d.ligar(relogio.getDataHoraAtual());
+    }
+
+    // desliga um dispositivo especifico numa divisao
+    public void desligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
+            throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
+        Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
+        d.desligar(relogio.getDataHoraAtual());
+    }
+
+    // método interno para ir buscar o dispositivo de forma direta
+    // nao devolve copia porque precisamos de alterar mesmo o estado dele
+    private Device getDispositivoInterno(String idCasa, String idDivisao, String idDispositivo)
+            throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+
+        Room r = h.getDivisao(idDivisao);
+        if (r == null) throw new RoomNotFoundException(idDivisao);
+
+        Device d = r.getDispositivo(idDispositivo);
+        if (d == null) throw new DeviceNotFoundException(idDispositivo);
+
+        return d;
+    }
+
+
     //===========================================================
     // TO DO:
-    // gestao de dispositivos (ligar, desligar, configurar)
     // estatisticas (casa que mais consome, top 3 dispositivos, top 3 divisoes)
-    // automações, escalonamentos e execução de cenários
+    // automacoes, escalonamentos e execucao de cenarios
     // gravar e carregar estado em ficheiro binario
     //===========================================================
 
