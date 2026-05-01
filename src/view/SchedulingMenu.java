@@ -36,10 +36,10 @@ public class SchedulingMenu {
 
             String opcao = scanner.nextLine().trim();
             switch (opcao) {
-                case "1": listarEscalonamentos();   break;
-                case "2": criarEscalonamento();     break;
-                case "3": verificarEscalonamentos();break;
-                case "0": voltar = true;            break;
+                case "1": listarEscalonamentos();    break;
+                case "2": criarEscalonamento();      break;
+                case "3": verificarEscalonamentos(); break;
+                case "0": voltar = true;             break;
                 default:  System.out.println("⚠ Opção inválida.");
             }
         }
@@ -65,7 +65,9 @@ public class SchedulingMenu {
             for (int i = 0; i < lista.size(); i++) {
                 Scheduling s = lista.get(i);
                 System.out.printf("  %d. [%s] %s | Hora: %s | %s | %s | Dispositivos: %d%n",
-                        i + 1, s.getId(), s.getNome(),
+                        i + 1,
+                        s.getId(),
+                        s.getNome(),
                         s.getHoraExecucao(),
                         s.isLigar() ? "LIGAR" : "DESLIGAR",
                         s.isRepeteDaily() ? "diário" : "único",
@@ -129,10 +131,8 @@ public class SchedulingMenu {
         String idCasa = scanner.nextLine().trim();
 
         try {
-            House h = controller.getCasa(idCasa);
-            h.adicionarEscalonamento(s);
-            System.out.println("✓ Escalonamento '" + nome + "' criado com sucesso!");
-            System.out.println("⚠ Nota: quando o controller expor adicionarEscalonamento(), usa esse método.");
+            controller.adicionarEscalonamento(idCasa, s);
+            System.out.println("✓ Escalonamento '" + nome + "' criado e guardado com sucesso!");
         } catch (HouseNotFoundException e) {
             System.out.println("✗ Casa não encontrada.");
         }
@@ -142,49 +142,9 @@ public class SchedulingMenu {
     // VERIFICA ESCALONAMENTOS AGORA
 
     private void verificarEscalonamentos() {
-        System.out.print("\nID da casa: ");
-        String idCasa = scanner.nextLine().trim();
-
-        try {
-            House h = controller.getCasa(idCasa);
-            List<Scheduling> lista = h.getEscalonamentos();
-            LocalTime agora = LocalTime.now();
-
-            System.out.println("Hora atual de simulação: " + agora);
-            int encontrados = 0;
-
-            for (Scheduling s : lista) {
-                if (s.deveExecutar(agora)) {
-                    System.out.printf("  ▶ A executar: '%s' → %s nos dispositivos: %s%n",
-                            s.getNome(),
-                            s.isLigar() ? "LIGAR" : "DESLIGAR",
-                            s.getIdsDispositivos());
-
-                    for (String idDisp : s.getIdsDispositivos()) {
-                        // tenta em todas as divisões da casa
-                        for (model.house.Room r : h.getDivisoes()) {
-                            try {
-                                if (s.isLigar()) {
-                                    controller.ligarDispositivo(idCasa, r.getId(), idDisp);
-                                } else {
-                                    controller.desligarDispositivo(idCasa, r.getId(), idDisp);
-                                }
-                                System.out.printf("    ✓ %s → %s%n", idDisp, s.isLigar() ? "ligado" : "desligado");
-                                break;
-                            } catch (Exception ignored) {}
-                        }
-                    }
-                    encontrados++;
-                }
-            }
-
-            if (encontrados == 0) {
-                System.out.println("(Nenhum escalonamento para executar neste momento.)");
-            }
-
-        } catch (HouseNotFoundException e) {
-            System.out.println("✗ Casa não encontrada.");
-        }
+        System.out.println("\n── Verificar Escalonamentos ──");
+        controller.verificarEscalonamentos();
+        System.out.println("✓ Escalonamentos verificados para a hora atual de simulação.");
     }
 
     // ==========================================================
