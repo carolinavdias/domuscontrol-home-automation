@@ -5,6 +5,8 @@ import exceptions.HouseNotFoundException;
 import exceptions.InvalidPermissionException;
 import exceptions.RoomNotFoundException;
 import exceptions.UserNotFoundException;
+import model.automations.Scenario;
+import model.automations.Scheduling;
 import model.devices.Device;
 import model.house.House;
 import model.house.Room;
@@ -13,6 +15,7 @@ import model.users.User;
 import utils.SimulatedClock;
 
 import java.io.Serializable;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,6 +43,7 @@ public class DomusController implements Serializable {
         this.relogio = new SimulatedClock();
         this.idUtilizadorAtual = null;
     }
+    
 
     //==========================================================
     // GESTAO DE UTILIZADORES
@@ -128,6 +132,7 @@ public class DomusController implements Serializable {
 
         h.adicionarDivisao(r);
     }
+
 
     //==========================================================
     // SIMULAÇÃO DO TEMPO
@@ -273,12 +278,85 @@ public class DomusController implements Serializable {
 
 
     //===========================================================
-    // TO DO:
-    // automações, escalonamentos e execução de cenários
-    // gravar e carregar estado em ficheiro binário
-    //===========================================================
+    // CENÁRIOS
 
-    
+    // adiciona um cenário ao utilizador atualmente autenticado
+    public void adicionarCenarioAoUtilizador(Scenario c) throws UserNotFoundException {
+        User atual = utilizadores.get(idUtilizadorAtual);
+        if (atual == null)
+            throw new UserNotFoundException("Nenhum utilizador autenticado.");
+        atual.adicionarCenario(c);
+    }
+
+    // executa um cenário do utilizador atual
+    // procura cada dispositivo do cenário em todas as casas e divisões
+    public void executarCenario(String idCenario)
+            throws UserNotFoundException {
+
+        User atual = utilizadores.get(idUtilizadorAtual);
+        if (atual == null)
+            throw new UserNotFoundException("Nenhum utilizador autenticado.");
+
+        Scenario cenario = atual.getCenarios().stream()
+            .filter(c -> c.getId().equals(idCenario))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Cenário não encontrado: " + idCenario));
+
+        for (String[] acao : cenario.getAcoes()) {
+            String idDisp = acao[0];
+            String tipoAcao = acao[1];
+            // procura o dispositivo em todas as casas e divisões
+            for (House h : casas.values()) {
+                for (Room r : h.getDivisoes()) {
+                    if (r.existeDispositivo(idDisp)) {
+                        try {
+                            if (tipoAcao.equals("ligar"))
+                                ligarDispositivo(h.getId(), r.getId(), idDisp);
+                            else
+                                desligarDispositivo(h.getId(), r.getId(), idDisp);
+                        } catch (Exception ignored) {}
+                    }
+                }
+            }
+        }
+    }
+
+
+    //===========================================================
+    // ESCALONAMENTOS
+
+    // adiciona um escalonamento a uma casa
+    public void adicionarEscalonamento(String idCasa, Scheduling s)
+            throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+        h.adicionarEscalonamento(s);
+    }
+
+    // verifica e executa todos os escalonamentos ativos para a hora atual
+    // deve ser chamado sempre que o tempo avança
+    public void verificarEscalonamentos() {
+        LocalTime agora = relogio.getDataHoraAtual().toLocalTime();
+        for (House h : casas.values()) {
+            for (Scheduling s : h.getEscalonamentos()) {
+                if (s.deveExecutar(agora)) {
+                    for (String idDisp : s.getIdsDispositivos()) {
+                        for (Room r : h.getDivisoes()) {
+                            if (r.existeDispositivo(idDisp)) {
+                                try {
+                                    if (s.isLigar())
+                                        ligarDispositivo(h.getId(), r.getId(), idDisp);
+                                    else
+                                        desligarDispositivo(h.getId(), r.getId(), idDisp);
+                                } catch (Exception ignored) {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     //==========================================================
     // METODO AUXILIAR DE PERMISSOES
