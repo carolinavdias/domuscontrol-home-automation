@@ -185,7 +185,7 @@ public class MainMenu {
     }
 
     // ==========================================================
-    // AVANÇAR TEMPO
+    // AVANÇA TEMPO
 
     private void avancarTempo() {
         System.out.println("\n── Avançar Tempo de Simulação ──");

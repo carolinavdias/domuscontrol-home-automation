@@ -57,7 +57,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // LISTAR CASAS
+    // LISTA CASAS
 
     private void listarCasas() {
         try {
@@ -78,7 +78,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // CRIAR CASA
+    // CRIA CASA
 
     private void criarCasa() {
         System.out.println("\n── Criar Nova Casa ──");
@@ -138,7 +138,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // LISTAR DIVISÕES
+    // LISTA DIVISÕES
 
     private void listarDivisoes(String idCasa) {
         try {
@@ -161,7 +161,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // CRIAR DIVISÃO
+    // CRIA DIVISÃO
 
     private void criarDivisao(String idCasa) {
         System.out.println("\n── Criar Nova Divisão ──");
@@ -221,7 +221,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // ADICIONAR DISPOSITIVO
+    // ADICIONA DISPOSITIVO
 
     private void adicionarDispositivo() {
         System.out.println("\n── Adicionar Dispositivo ──");
@@ -282,7 +282,7 @@ public class HouseMenu {
     }
 
     // ==========================================================
-    // CRIAR DISPOSITIVO PELO TIPO
+    // CRIA DISPOSITIVO PELO TIPO
 
     private Device criarDispositivo(String tipo, String id, String marca,
                                      String modelo, double consumo) {
