@@ -1,7 +1,6 @@
 package view;
 
 import controller.DomusController;
-import exceptions.HouseNotFoundException;
 import exceptions.UserNotFoundException;
 import model.automations.Scenario;
 import model.users.User;
@@ -86,7 +85,7 @@ public class ScenarioMenu {
 
         Scenario cenario = new Scenario(id, nome, descricao);
 
-        System.out.println("\nAgora adiciona as ações (dispositivos a ligar/desligar).");
+        System.out.println("\nAdiciona as ações (dispositivos a ligar/desligar).");
         System.out.println("Escreve 'fim' no ID do dispositivo para terminar.");
 
         while (true) {
@@ -105,14 +104,10 @@ public class ScenarioMenu {
             }
         }
 
-        // adiciona o cenário ao utilizador atual
         try {
-            // nota: quando o controller expor este método, usar controller.adicionarCenarioAoUtilizador()
-            // por agora adicionamos diretamente via getUtilizadorAtual()
-            // ATENÇÃO: getUtilizadorAtual() devolve cópia — este método não persiste ainda!
-            System.out.println("✓ Cenário '" + nome + "' criado com " + cenario.getAcoes().size() + " ações.");
-            System.out.println("⚠ Para persistir cenários, a tua colega precisa de expor adicionarCenarioAoUtilizador() no controller.");
-        } catch (Exception e) {
+            controller.adicionarCenarioAoUtilizador(cenario);
+            System.out.println("✓ Cenário '" + nome + "' criado e guardado com sucesso!");
+        } catch (UserNotFoundException e) {
             System.out.println("✗ Erro ao guardar cenário: " + e.getMessage());
         }
     }
@@ -132,10 +127,13 @@ public class ScenarioMenu {
                 return;
             }
 
-            // mostra a lista
+            System.out.println("Cenários disponíveis:");
             for (int i = 0; i < cenarios.size(); i++) {
-                System.out.printf("  %d. %s — %s%n",
-                        i + 1, cenarios.get(i).getNome(), cenarios.get(i).getDescricao());
+                System.out.printf("  %d. [%s] %s — %s%n",
+                        i + 1,
+                        cenarios.get(i).getId(),
+                        cenarios.get(i).getNome(),
+                        cenarios.get(i).getDescricao());
             }
 
             System.out.print("Número do cenário a executar: ");
@@ -152,38 +150,16 @@ public class ScenarioMenu {
                 return;
             }
 
-            System.out.print("ID da casa onde executar: ");
-            String idCasa = scanner.nextLine().trim();
+            String idCenario = cenarios.get(escolha).getId();
+            String nomeCenario = cenarios.get(escolha).getNome();
 
-            System.out.print("ID da divisão: ");
-            String idDivisao = scanner.nextLine().trim();
-
-            Scenario c = cenarios.get(escolha);
-            int sucessos = 0;
-            int erros = 0;
-
-            for (String[] acao : c.getAcoes()) {
-                String idDisp = acao[0];
-                String tipoAcao = acao[1];
-                try {
-                    if (tipoAcao.equals("ligar")) {
-                        controller.ligarDispositivo(idCasa, idDivisao, idDisp);
-                    } else {
-                        controller.desligarDispositivo(idCasa, idDivisao, idDisp);
-                    }
-                    System.out.printf("  ✓ %s → %s%n", idDisp, tipoAcao);
-                    sucessos++;
-                } catch (Exception e) {
-                    System.out.printf("  ✗ %s → erro (%s)%n", idDisp, e.getMessage());
-                    erros++;
-                }
-            }
-
-            System.out.printf("%nCenário '%s' executado: %d ações com sucesso, %d erros.%n",
-                    c.getNome(), sucessos, erros);
+            controller.executarCenario(idCenario);
+            System.out.println("✓ Cenário '" + nomeCenario + "' executado com sucesso!");
 
         } catch (UserNotFoundException e) {
-            System.out.println("✗ Erro de sessão.");
+            System.out.println("✗ Erro de sessão: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            System.out.println("✗ " + e.getMessage());
         }
     }
 }
