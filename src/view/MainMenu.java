@@ -135,7 +135,7 @@ public class MainMenu {
             try {
                 User atual = controller.getUtilizadorAtual();
                 System.out.println("\n╔══════════════════════════════════════╗");
-                System.out.println("║  Olá, " + padDir(atual.getNome(), 30) + "  ║");
+                System.out.println("║  Olá, " + padDir(atual.getNome(), 30) + " ║");
                 System.out.println("╠══════════════════════════════════════╣");
                 System.out.println("║  1. Gerir Casas e Divisões           ║");
                 System.out.println("║  2. Gerir Dispositivos               ║");
