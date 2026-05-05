@@ -143,6 +143,8 @@ public class MainMenu {
                 System.out.println("║  4. Escalonamentos                   ║");
                 System.out.println("║  5. Avançar tempo                    ║");
                 System.out.println("║  6. Estatísticas                     ║");
+                System.out.println("║  7. Guardar estado                   ║");
+                System.out.println("║  8. Carregar estado                  ║");
                 System.out.println("║  0. Terminar sessão                  ║");
                 System.out.println("╚══════════════════════════════════════╝");
                 System.out.print("Opção: ");
@@ -167,6 +169,12 @@ public class MainMenu {
                         break;
                     case "6":
                         mostrarEstatisticas();
+                        break;
+                    case "7":
+                        guardarEstado();
+                        break;
+                    case "8":
+                        carregarEstado();
                         break;
                     case "0":
                         controller.terminarSessao();
@@ -264,6 +272,31 @@ public class MainMenu {
             } catch (exceptions.HouseNotFoundException e) {
                 System.out.println("✗ Casa não encontrada.");
             }
+        }
+    }
+
+    //==========================================================
+    // GUARDAR E CARREGAR ESTADO
+
+    private void guardarEstado() {
+        System.out.print("Nome do ficheiro (ex: estado.dat): ");
+        String caminho = scanner.nextLine().trim();
+        try {
+            controller.gravarEstado(caminho);
+            System.out.println("✓ Estado guardado em: " + caminho);
+        } catch (java.io.IOException e) {
+            System.out.println("✗ Erro ao guardar: " + e.getMessage());
+        }
+    }
+
+    private void carregarEstado() {
+        System.out.print("Nome do ficheiro (ex: estado.dat): ");
+        String caminho = scanner.nextLine().trim();
+        try {
+            controller = DomusController.carregarEstado(caminho);
+            System.out.println("✓ Estado carregado com sucesso!");
+        } catch (Exception e) {
+            System.out.println("✗ Erro ao carregar: " + e.getMessage());
         }
     }
 
