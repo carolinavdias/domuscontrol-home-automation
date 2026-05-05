@@ -14,6 +14,11 @@ import model.users.Role;
 import model.users.User;
 import utils.SimulatedClock;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -23,9 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
-// classe principal do sistema, ainda em construçao!! :)
-// por agora trata de UTILIZADORES, CASAS e DIVISOES
+// classe central do sistema, gere tudo
 public class DomusController implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -33,8 +36,6 @@ public class DomusController implements Serializable {
     private Map<String, User> utilizadores;
     private Map<String, House> casas;
     private SimulatedClock relogio;
-
-    // id do utilizador que esta autenticado neste momento
     private String idUtilizadorAtual;
 
     public DomusController() {
@@ -43,12 +44,11 @@ public class DomusController implements Serializable {
         this.relogio = new SimulatedClock();
         this.idUtilizadorAtual = null;
     }
-    
+
 
     //==========================================================
-    // GESTAO DE UTILIZADORES
+    // UTILIZADORES
 
-    // regista um utilizador no sistema
     public void registarUtilizador(User u) {
         if (u == null)
             throw new IllegalArgumentException("O utilizador não pode ser null.");
@@ -57,7 +57,6 @@ public class DomusController implements Serializable {
         utilizadores.put(u.getId(), new User(u));
     }
 
-    // autentica um utilizador com id e password
     public boolean autenticar(String id, String password) {
         User u = utilizadores.get(id);
         if (u != null && u.verificarPassword(password)) {
@@ -67,45 +66,44 @@ public class DomusController implements Serializable {
         return false;
     }
 
-    // termina a sessao do utilizador que esta autenticado
     public void terminarSessao() {
         this.idUtilizadorAtual = null;
     }
 
-    // devolve o utilizador que esta atualmente autenticado
     public User getUtilizadorAtual() throws UserNotFoundException {
         if (idUtilizadorAtual == null)
             throw new UserNotFoundException("Nenhum utilizador autenticado.");
         return new User(utilizadores.get(idUtilizadorAtual));
     }
 
+    public List<User> getTodosUtilizadores() {
+        return utilizadores.values().stream()
+            .map(User::new)
+            .collect(Collectors.toList());
+    }
+
 
     //==========================================================
-    // GESTAO DE CASAS
+    // CASAS
 
-    // cria uma nova casa, quem a cria fica automaticamente admin dela
+    // quem cria a casa fica automaticamente admin dela
     public void criarCasa(House h) throws UserNotFoundException {
         User atual = utilizadores.get(idUtilizadorAtual);
         if (atual == null)
             throw new UserNotFoundException("Nenhum utilizador autenticado.");
-
         if (casas.containsKey(h.getId()))
             throw new IllegalArgumentException("Já existe uma casa com esse id.");
 
         casas.put(h.getId(), new House(h));
-
-        // o utilizador que criou a casa fica admin dela
         utilizadores.get(idUtilizadorAtual).adicionarCasa(h.getId(), Role.ADMIN);
     }
 
-    // devolve uma casa pelo id
     public House getCasa(String id) throws HouseNotFoundException {
         House h = casas.get(id);
         if (h == null) throw new HouseNotFoundException(id);
         return new House(h);
     }
 
-    // devolve as casas a que o utilizador atual tem acesso
     public List<House> getCasasDoUtilizadorAtual() throws UserNotFoundException {
         User atual = utilizadores.get(idUtilizadorAtual);
         if (atual == null)
@@ -117,11 +115,17 @@ public class DomusController implements Serializable {
             .collect(Collectors.toList());
     }
 
+    public List<House> getTodasCasas() {
+        return casas.values().stream()
+            .map(House::new)
+            .collect(Collectors.toList());
+    }
+
 
     //==========================================================
-    // GESTAO DE DIVISOES
+    // DIVISÕES
 
-    // adiciona uma divisao a uma casa, so admins podem fazer isto
+    // só admins podem adicionar divisões
     public void adicionarDivisao(String idCasa, Room r)
             throws HouseNotFoundException, InvalidPermissionException, UserNotFoundException {
 
@@ -133,20 +137,23 @@ public class DomusController implements Serializable {
         h.adicionarDivisao(r);
     }
 
+    public Room getDivisao(String idCasa, String idDivisao)
+            throws HouseNotFoundException, RoomNotFoundException {
 
-    //==========================================================
-    // SIMULAÇÃO DO TEMPO
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
 
-    public void avancarTempo(long minutos) {
-        relogio.avancarMinutos(minutos);
+        Room r = h.getDivisao(idDivisao);
+        if (r == null) throw new RoomNotFoundException(idDivisao);
+
+        return new Room(r);
     }
 
 
-    //==========================================================    
-    // GESTAO DE DISPOSITIVOS
+    //==========================================================
+    // DISPOSITIVOS
 
-    // adiciona um dispositivo a uma divisao de uma casa
-    // so admins podem fazer isto!! 
+    // só admins podem adicionar dispositivos
     public void adicionarDispositivo(String idCasa, String idDivisao, Device d)
             throws HouseNotFoundException, RoomNotFoundException,
                    InvalidPermissionException, UserNotFoundException {
@@ -162,24 +169,19 @@ public class DomusController implements Serializable {
         r.adicionarDispositivo(d);
     }
 
-    // liga um dispositivo especifico numa divisao
     public void ligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
-
         Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
         d.ligar(relogio.getDataHoraAtual());
     }
 
-    // desliga um dispositivo especifico numa divisao
     public void desligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
-
         Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
         d.desligar(relogio.getDataHoraAtual());
     }
 
-    // método interno para ir buscar o dispositivo de forma direta
-    // nao devolve copia porque precisamos de alterar mesmo o estado dele
+    // devolve referência direta, não cópia, porque precisamos alterar o estado
     private Device getDispositivoInterno(String idCasa, String idDivisao, String idDispositivo)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
 
@@ -199,7 +201,6 @@ public class DomusController implements Serializable {
     //==========================================================
     // ESTATÍSTICAS
 
-    // devolve a casa que mais consome energia em todo o sistema
     public House getCasaQueMaisConsome() {
         return casas.values().stream()
             .max(Comparator.comparingDouble(House::getConsumoTotal))
@@ -207,27 +208,22 @@ public class DomusController implements Serializable {
             .orElse(null);
     }
 
-    // devolve os 3 dispositivos mais utilizados de uma casa, por número de activações
     public List<Device> getTop3DispositivosPorActivacoes(String idCasa)
             throws HouseNotFoundException {
 
         House h = casas.get(idCasa);
         if (h == null) throw new HouseNotFoundException(idCasa);
 
-        // junta todos os dispositivos de todas as divisões da casa
         List<Device> todos = new ArrayList<>();
-        for (Room r : h.getDivisoes()) {
+        for (Room r : h.getDivisoes())
             todos.addAll(r.getDispositivos());
-        }
 
-        // ordena por número de activações, do maior para o menor, e devolve os 3 primeiros
         return todos.stream()
             .sorted(Comparator.comparingInt(Device::getNumActivacoes).reversed())
             .limit(3)
             .collect(Collectors.toList());
     }
 
-    // devolve os 3 dispositivos mais utilizados de uma casa, por tempo total ligado
     public List<Device> getTop3DispositivosPorTempo(String idCasa)
             throws HouseNotFoundException {
 
@@ -235,9 +231,8 @@ public class DomusController implements Serializable {
         if (h == null) throw new HouseNotFoundException(idCasa);
 
         List<Device> todos = new ArrayList<>();
-        for (Room r : h.getDivisoes()) {
+        for (Room r : h.getDivisoes())
             todos.addAll(r.getDispositivos());
-        }
 
         return todos.stream()
             .sorted(Comparator.comparingLong(Device::getTotalMinutosLigado).reversed())
@@ -245,12 +240,9 @@ public class DomusController implements Serializable {
             .collect(Collectors.toList());
     }
 
-    // devolve as 3 divisões com mais dispositivos em todo o sistema
-    // inclui o nome da casa a que cada divisão pertence
     public List<String> getTop3DivisoesPorDispositivos() {
         List<String[]> pares = new ArrayList<>();
 
-        // percorre todas as casas e todas as divisões e guarda pares (descrição, nº dispositivos)
         for (House h : casas.values()) {
             for (Room r : h.getDivisoes()) {
                 pares.add(new String[]{
@@ -260,7 +252,6 @@ public class DomusController implements Serializable {
             }
         }
 
-        // ordena pelo número de dispositivos, do maior para o menor, e devolve os 3 primeiros
         return pares.stream()
             .sorted((a, b) -> Integer.compare(
                 Integer.parseInt(b[1]), Integer.parseInt(a[1])))
@@ -269,7 +260,6 @@ public class DomusController implements Serializable {
             .collect(Collectors.toList());
     }
 
-    // método de consulta extra: consumo total de uma casa específica
     public double getConsumoTotalDaCasa(String idCasa) throws HouseNotFoundException {
         House h = casas.get(idCasa);
         if (h == null) throw new HouseNotFoundException(idCasa);
@@ -277,10 +267,9 @@ public class DomusController implements Serializable {
     }
 
 
-    //===========================================================
+    //==========================================================
     // CENÁRIOS
 
-    // adiciona um cenário ao utilizador atualmente autenticado
     public void adicionarCenarioAoUtilizador(Scenario c) throws UserNotFoundException {
         User atual = utilizadores.get(idUtilizadorAtual);
         if (atual == null)
@@ -288,11 +277,8 @@ public class DomusController implements Serializable {
         atual.adicionarCenario(c);
     }
 
-    // executa um cenário do utilizador atual
-    // procura cada dispositivo do cenário em todas as casas e divisões
-    public void executarCenario(String idCenario)
-            throws UserNotFoundException {
-
+    // percorre todas as casas à procura dos dispositivos do cenário
+    public void executarCenario(String idCenario) throws UserNotFoundException {
         User atual = utilizadores.get(idUtilizadorAtual);
         if (atual == null)
             throw new UserNotFoundException("Nenhum utilizador autenticado.");
@@ -305,7 +291,6 @@ public class DomusController implements Serializable {
         for (String[] acao : cenario.getAcoes()) {
             String idDisp = acao[0];
             String tipoAcao = acao[1];
-            // procura o dispositivo em todas as casas e divisões
             for (House h : casas.values()) {
                 for (Room r : h.getDivisoes()) {
                     if (r.existeDispositivo(idDisp)) {
@@ -322,10 +307,9 @@ public class DomusController implements Serializable {
     }
 
 
-    //===========================================================
+    //==========================================================
     // ESCALONAMENTOS
 
-    // adiciona um escalonamento a uma casa
     public void adicionarEscalonamento(String idCasa, Scheduling s)
             throws HouseNotFoundException {
         House h = casas.get(idCasa);
@@ -333,8 +317,7 @@ public class DomusController implements Serializable {
         h.adicionarEscalonamento(s);
     }
 
-    // verifica e executa todos os escalonamentos ativos para a hora atual
-    // deve ser chamado sempre que o tempo avança
+    // chamar este método sempre que o tempo avançar
     public void verificarEscalonamentos() {
         LocalTime agora = relogio.getDataHoraAtual().toLocalTime();
         for (House h : casas.values()) {
@@ -359,9 +342,40 @@ public class DomusController implements Serializable {
 
 
     //==========================================================
-    // METODO AUXILIAR DE PERMISSOES
+    // SIMULAÇÃO DO TEMPO
 
-    // verifica se o utilizador atual e admin da casa indicada
+    public void avancarTempo(long minutos) {
+        relogio.avancarMinutos(minutos);
+        verificarEscalonamentos();
+    }
+
+    public SimulatedClock getRelogio() {
+        return relogio;
+    }
+
+
+    //==========================================================
+    // GRAVAR E CARREGAR ESTADO
+
+    public void gravarEstado(String caminho) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream(caminho))) {
+            oos.writeObject(this);
+        }
+    }
+
+    public static DomusController carregarEstado(String caminho)
+            throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(
+                new FileInputStream(caminho))) {
+            return (DomusController) ois.readObject();
+        }
+    }
+
+
+    //==========================================================
+    // PERMISSÕES
+
     private void verificarPermissaoAdmin(String idCasa)
             throws InvalidPermissionException, UserNotFoundException {
 
@@ -371,6 +385,6 @@ public class DomusController implements Serializable {
 
         if (!atual.isAdmin(idCasa))
             throw new InvalidPermissionException(
-                "Não tens permissão de administrador para esta casa!");
+                "Não tens permissão de administrador para esta casa.");
     }
 }
