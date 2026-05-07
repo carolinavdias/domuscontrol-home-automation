@@ -5,6 +5,7 @@ import exceptions.HouseNotFoundException;
 import exceptions.InvalidPermissionException;
 import exceptions.RoomNotFoundException;
 import exceptions.UserNotFoundException;
+import model.automations.Automation;
 import model.automations.Scenario;
 import model.automations.Scheduling;
 import model.devices.Device;
@@ -305,7 +306,63 @@ public class DomusController implements Serializable {
             }
         }
     }
+    
+    //==========================================================
+    // AUTOMAÇÕES
 
+    // adiciona uma automação a uma casa
+    public void adicionarAutomacao(String idCasa, Automation a)
+            throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+        h.adicionarAutomacao(a);
+    }
+
+    // verifica todas as automações ativas e executa as que a condição for verdade
+    // deve ser chamado sempre que um sensor atualiza o seu valor
+    public void verificarAutomacoes(String idCasa) throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+
+        for (Automation auto : h.getAutomacoes()) {
+            if (!auto.isAtiva()) continue;
+
+            // procura o sensor em todas as divisões da casa
+            for (Room r : h.getDivisoes()) {
+                Device sensor = r.getDispositivo(auto.getIdSensor());
+                if (sensor instanceof model.devices.Sensor) {
+                    double valorAtual = ((model.devices.Sensor) sensor).getValorAtual();
+                    if (auto.avaliarCondicao(valorAtual)) {
+                        // condicao verificada, executa a acao em todos os dispositivos
+                        for (String idDisp : auto.getIdsDispositivos()) {
+                            for (Room div : h.getDivisoes()) {
+                                if (div.existeDispositivo(idDisp)) {
+                                    try {
+                                        if (auto.getAcao().equals("ligar"))
+                                            ligarDispositivo(h.getId(), div.getId(), idDisp);
+                                        else
+                                            desligarDispositivo(h.getId(), div.getId(), idDisp);
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // atualiza o valor de um sensor e verifica automações automaticamente
+    public void atualizarSensor(String idCasa, String idDivisao, String idSensor, double novoValor)
+            throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
+        Device d = getDispositivoInterno(idCasa, idDivisao, idSensor);
+        if (!(d instanceof model.devices.Sensor))
+            throw new IllegalArgumentException("O dispositivo indicado não é um sensor.");
+
+        ((model.devices.Sensor) d).setValorAtual(novoValor);
+        verificarAutomacoes(idCasa);
+    }
 
     //==========================================================
     // ESCALONAMENTOS
