@@ -6,14 +6,17 @@ import exceptions.InvalidPermissionException;
 import exceptions.RoomNotFoundException;
 import exceptions.UserNotFoundException;
 import model.automations.Automation;
+import model.automations.InteractionRecord;
 import model.automations.Scenario;
 import model.automations.Scheduling;
+import model.automations.Suggestion;
 import model.devices.Device;
 import model.house.House;
 import model.house.Room;
 import model.users.Role;
 import model.users.User;
 import utils.SimulatedClock;
+import utils.SuggestionEngine;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -38,12 +41,14 @@ public class DomusController implements Serializable {
     private Map<String, House> casas;
     private SimulatedClock relogio;
     private String idUtilizadorAtual;
+    private List<InteractionRecord> historico;
 
     public DomusController() {
         this.utilizadores = new HashMap<>();
         this.casas = new HashMap<>();
         this.relogio = new SimulatedClock();
         this.idUtilizadorAtual = null;
+        this.historico = new ArrayList<>();
     }
 
 
@@ -172,14 +177,29 @@ public class DomusController implements Serializable {
 
     public void ligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
         Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
         d.ligar(relogio.getDataHoraAtual());
+
+        // regista no histórico só quando há sessão ativa (ações manuais do utilizador)
+        if (idUtilizadorAtual != null)
+            historico.add(new InteractionRecord(
+                idUtilizadorAtual, idDispositivo,
+                d.getMarca() + " " + d.getModelo(),
+                idCasa, "ligar", relogio.getDataHoraAtual()));
     }
 
     public void desligarDispositivo(String idCasa, String idDivisao, String idDispositivo)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
+
         Device d = getDispositivoInterno(idCasa, idDivisao, idDispositivo);
         d.desligar(relogio.getDataHoraAtual());
+
+        if (idUtilizadorAtual != null)
+            historico.add(new InteractionRecord(
+                idUtilizadorAtual, idDispositivo,
+                d.getMarca() + " " + d.getModelo(),
+                idCasa, "desligar", relogio.getDataHoraAtual()));
     }
 
     // devolve referência direta, não cópia, porque precisamos alterar o estado
@@ -290,7 +310,7 @@ public class DomusController implements Serializable {
             .orElseThrow(() -> new IllegalArgumentException("Cenário não encontrado: " + idCenario));
 
         for (String[] acao : cenario.getAcoes()) {
-            String idDisp = acao[0];
+            String idDisp   = acao[0];
             String tipoAcao = acao[1];
             for (House h : casas.values()) {
                 for (Room r : h.getDivisoes()) {
@@ -306,11 +326,11 @@ public class DomusController implements Serializable {
             }
         }
     }
-    
+
+
     //==========================================================
     // AUTOMAÇÕES
 
-    // adiciona uma automação a uma casa
     public void adicionarAutomacao(String idCasa, Automation a)
             throws HouseNotFoundException {
         House h = casas.get(idCasa);
@@ -318,8 +338,7 @@ public class DomusController implements Serializable {
         h.adicionarAutomacao(a);
     }
 
-    // verifica todas as automações ativas e executa as que a condição for verdade
-    // deve ser chamado sempre que um sensor atualiza o seu valor
+    // verifica todas as automações ativas; chamar sempre que um sensor atualiza
     public void verificarAutomacoes(String idCasa) throws HouseNotFoundException {
         House h = casas.get(idCasa);
         if (h == null) throw new HouseNotFoundException(idCasa);
@@ -327,13 +346,11 @@ public class DomusController implements Serializable {
         for (Automation auto : h.getAutomacoes()) {
             if (!auto.isAtiva()) continue;
 
-            // procura o sensor em todas as divisões da casa
             for (Room r : h.getDivisoes()) {
                 Device sensor = r.getDispositivo(auto.getIdSensor());
                 if (sensor instanceof model.devices.Sensor) {
                     double valorAtual = ((model.devices.Sensor) sensor).getValorAtual();
                     if (auto.avaliarCondicao(valorAtual)) {
-                        // condicao verificada, executa a acao em todos os dispositivos
                         for (String idDisp : auto.getIdsDispositivos()) {
                             for (Room div : h.getDivisoes()) {
                                 if (div.existeDispositivo(idDisp)) {
@@ -352,7 +369,6 @@ public class DomusController implements Serializable {
         }
     }
 
-    // atualiza o valor de um sensor e verifica automações automaticamente
     public void atualizarSensor(String idCasa, String idDivisao, String idSensor, double novoValor)
             throws HouseNotFoundException, RoomNotFoundException, DeviceNotFoundException {
 
@@ -361,8 +377,17 @@ public class DomusController implements Serializable {
             throw new IllegalArgumentException("O dispositivo indicado não é um sensor.");
 
         ((model.devices.Sensor) d).setValorAtual(novoValor);
+
+        // regista a leitura para deteção de padrões
+        if (idUtilizadorAtual != null)
+            historico.add(new InteractionRecord(
+                idUtilizadorAtual, idSensor,
+                d.getMarca() + " " + d.getModelo(),
+                idCasa, relogio.getDataHoraAtual(), novoValor));
+
         verificarAutomacoes(idCasa);
     }
+
 
     //==========================================================
     // ESCALONAMENTOS
@@ -374,7 +399,7 @@ public class DomusController implements Serializable {
         h.adicionarEscalonamento(s);
     }
 
-    // chamar este método sempre que o tempo avançar
+    // chamar sempre que o tempo avançar
     public void verificarEscalonamentos() {
         LocalTime agora = relogio.getDataHoraAtual().toLocalTime();
         for (House h : casas.values()) {
@@ -395,6 +420,25 @@ public class DomusController implements Serializable {
                 }
             }
         }
+    }
+
+
+    //==========================================================
+    // SUGESTÕES AUTOMÁTICAS
+
+    public List<Suggestion> gerarSugestoes(String idCasa) throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+        return SuggestionEngine.gerarSugestoes(historico, idCasa);
+    }
+
+    public void aceitarSugestao(String idCasa, Suggestion s) throws HouseNotFoundException {
+        House h = casas.get(idCasa);
+        if (h == null) throw new HouseNotFoundException(idCasa);
+        if (s.getTipo() == Suggestion.Tipo.ESCALONAMENTO)
+            h.adicionarEscalonamento(s.getEscalonamento());
+        else
+            h.adicionarAutomacao(s.getAutomacao());
     }
 
 
