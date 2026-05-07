@@ -17,13 +17,11 @@ public class MainMenu {
     public MainMenu() {
         this.controller = new DomusController();
         this.scanner = new Scanner(System.in);
-
-        // popula com dados de teste para facilitar o desenvolvimento
         TestData.popular(controller);
     }
 
-    // ==========================================================
-    // ARRANQUE DA APLICAÇÃO
+    //==========================================================
+    // ARRANQUE
 
     public void iniciar() {
         System.out.println("╔══════════════════════════════════════╗");
@@ -39,8 +37,8 @@ public class MainMenu {
         scanner.close();
     }
 
-    // ==========================================================
-    // MENU INICIAL (antes do login)
+    //==========================================================
+    // MENU INICIAL
 
     private boolean mostrarMenuInicial() {
         System.out.println("\n┌──────────────────────────────────────┐");
@@ -52,13 +50,9 @@ public class MainMenu {
         System.out.println("└──────────────────────────────────────┘");
         System.out.print("Opção: ");
 
-        String opcao = scanner.nextLine().trim();
-
-        switch (opcao) {
+        switch (scanner.nextLine().trim()) {
             case "1":
-                if (fazerLogin()) {
-                    mostrarMenuPrincipal();
-                }
+                if (fazerLogin()) mostrarMenuPrincipal();
                 return false;
             case "2":
                 registarUtilizador();
@@ -71,7 +65,7 @@ public class MainMenu {
         }
     }
 
-    // ==========================================================
+    //==========================================================
     // LOGIN
 
     private boolean fazerLogin() {
@@ -99,7 +93,7 @@ public class MainMenu {
         return sucesso;
     }
 
-    // ==========================================================
+    //==========================================================
     // REGISTO
 
     private void registarUtilizador() {
@@ -126,8 +120,8 @@ public class MainMenu {
         }
     }
 
-    // ==========================================================
-    // MENU PRINCIPAL (depois do login)
+    //==========================================================
+    // MENU PRINCIPAL
 
     private void mostrarMenuPrincipal() {
         boolean sair = false;
@@ -141,41 +135,25 @@ public class MainMenu {
                 System.out.println("║  2. Gerir Dispositivos               ║");
                 System.out.println("║  3. Cenários                         ║");
                 System.out.println("║  4. Escalonamentos                   ║");
-                System.out.println("║  5. Avançar tempo                    ║");
-                System.out.println("║  6. Estatísticas                     ║");
-                System.out.println("║  7. Guardar estado                   ║");
-                System.out.println("║  8. Carregar estado                  ║");
+                System.out.println("║  5. Automações                       ║");
+                System.out.println("║  6. Avançar tempo                    ║");
+                System.out.println("║  7. Estatísticas                     ║");
+                System.out.println("║  8. Guardar estado                   ║");
+                System.out.println("║  9. Carregar estado                  ║");
                 System.out.println("║  0. Terminar sessão                  ║");
                 System.out.println("╚══════════════════════════════════════╝");
                 System.out.print("Opção: ");
 
-                String opcao = scanner.nextLine().trim();
-
-                switch (opcao) {
-                    case "1":
-                        new HouseMenu(controller, scanner).mostrar();
-                        break;
-                    case "2":
-                        new DeviceMenu(controller, scanner).mostrar();
-                        break;
-                    case "3":
-                        new ScenarioMenu(controller, scanner).mostrar();
-                        break;
-                    case "4":
-                        new SchedulingMenu(controller, scanner).mostrar();
-                        break;
-                    case "5":
-                        avancarTempo();
-                        break;
-                    case "6":
-                        mostrarEstatisticas();
-                        break;
-                    case "7":
-                        guardarEstado();
-                        break;
-                    case "8":
-                        carregarEstado();
-                        break;
+                switch (scanner.nextLine().trim()) {
+                    case "1": new HouseMenu(controller, scanner).mostrar();    break;
+                    case "2": new DeviceMenu(controller, scanner).mostrar();   break;
+                    case "3": new ScenarioMenu(controller, scanner).mostrar(); break;
+                    case "4": new SchedulingMenu(controller, scanner).mostrar(); break;
+                    case "5": new AutomationMenu(controller, scanner).mostrar(); break;
+                    case "6": avancarTempo();       break;
+                    case "7": mostrarEstatisticas(); break;
+                    case "8": guardarEstado();       break;
+                    case "9": carregarEstado();      break;
                     case "0":
                         controller.terminarSessao();
                         System.out.println("✓ Sessão terminada.");
@@ -192,8 +170,8 @@ public class MainMenu {
         }
     }
 
-    // ==========================================================
-    // AVANÇA TEMPO
+    //==========================================================
+    // AVANÇAR TEMPO
 
     private void avancarTempo() {
         System.out.println("\n── Avançar Tempo de Simulação ──");
@@ -210,9 +188,9 @@ public class MainMenu {
         try {
             long quantidade = Long.parseLong(scanner.nextLine().trim());
             switch (opcao) {
-                case "1": controller.avancarTempo(quantidade);            break;
-                case "2": controller.avancarTempo(quantidade * 60);       break;
-                case "3": controller.avancarTempo(quantidade * 60 * 24);  break;
+                case "1": controller.avancarTempo(quantidade);           break;
+                case "2": controller.avancarTempo(quantidade * 60);      break;
+                case "3": controller.avancarTempo(quantidade * 60 * 24); break;
                 default:  System.out.println("⚠ Opção inválida."); return;
             }
             System.out.println("✓ Tempo avançado com sucesso!");
@@ -221,13 +199,12 @@ public class MainMenu {
         }
     }
 
-    // ==========================================================
+    //==========================================================
     // ESTATÍSTICAS
 
     private void mostrarEstatisticas() {
         System.out.println("\n── Estatísticas ──");
 
-        // casa que mais consome
         model.house.House maisConsome = controller.getCasaQueMaisConsome();
         if (maisConsome != null) {
             System.out.printf("🏠 Casa que mais consome: %s (%.1f Wh)%n",
@@ -236,18 +213,15 @@ public class MainMenu {
             System.out.println("🏠 Sem casas no sistema.");
         }
 
-        // top 3 divisões com mais dispositivos
         System.out.println("\n📊 Top 3 divisões com mais dispositivos:");
         java.util.List<String> top3 = controller.getTop3DivisoesPorDispositivos();
         if (top3.isEmpty()) {
             System.out.println("  (sem dados)");
         } else {
-            for (int i = 0; i < top3.size(); i++) {
+            for (int i = 0; i < top3.size(); i++)
                 System.out.println("  " + (i + 1) + ". " + top3.get(i));
-            }
         }
 
-        // top 3 dispositivos de uma casa específica
         System.out.print("\nID da casa para ver top 3 dispositivos (ou Enter para saltar): ");
         String idCasa = scanner.nextLine().trim();
         if (!idCasa.isBlank()) {
@@ -255,20 +229,19 @@ public class MainMenu {
                 System.out.println("Por ativações:");
                 java.util.List<model.devices.Device> topAtiv =
                         controller.getTop3DispositivosPorActivacoes(idCasa);
-                for (int i = 0; i < topAtiv.size(); i++) {
+                for (int i = 0; i < topAtiv.size(); i++)
                     System.out.println("  " + (i + 1) + ". " + topAtiv.get(i).getMarca()
                             + " " + topAtiv.get(i).getModelo()
                             + " | Ativações: " + topAtiv.get(i).getNumActivacoes());
-                }
 
                 System.out.println("Por tempo ligado:");
                 java.util.List<model.devices.Device> topTempo =
                         controller.getTop3DispositivosPorTempo(idCasa);
-                for (int i = 0; i < topTempo.size(); i++) {
+                for (int i = 0; i < topTempo.size(); i++)
                     System.out.println("  " + (i + 1) + ". " + topTempo.get(i).getMarca()
                             + " " + topTempo.get(i).getModelo()
                             + " | Tempo: " + topTempo.get(i).getTotalMinutosLigado() + " min");
-                }
+
             } catch (exceptions.HouseNotFoundException e) {
                 System.out.println("✗ Casa não encontrada.");
             }
@@ -300,17 +273,13 @@ public class MainMenu {
         }
     }
 
-    // ==========================================================
+    //==========================================================
     // UTILITÁRIO
 
-    // preenche uma string com espaços à direita até ao tamanho indicado
     private String padDir(String texto, int tamanho) {
         if (texto.length() >= tamanho) return texto.substring(0, tamanho);
         return texto + " ".repeat(tamanho - texto.length());
     }
-
-    // ==========================================================
-    // MAIN
 
     public static void main(String[] args) {
         new MainMenu().iniciar();
