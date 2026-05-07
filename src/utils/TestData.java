@@ -3,6 +3,7 @@ package utils;
 import controller.DomusController;
 import exceptions.HouseNotFoundException;
 import exceptions.UserNotFoundException;
+import model.automations.Automation;
 import model.automations.Scenario;
 import model.automations.Scheduling;
 import model.devices.*;
@@ -28,6 +29,7 @@ public class TestData {
             criarCasaComDivisoesEDispositivos(controller);
             criarCenariosDoUtilizador(controller);
             criarEscalonamentosDaCasa(controller);
+            criarAutomacoesDaCasa(controller);
             System.out.println("[TestData] Sistema populado com sucesso!");
         } catch (Exception e) {
             System.out.println("[TestData] Erro ao popular dados: " + e.getMessage());
@@ -195,6 +197,37 @@ public class TestData {
         desligarTudo.adicionarDispositivo("d7");
         desligarTudo.adicionarDispositivo("d8");
         controller.adicionarEscalonamento("c1", desligarTudo);
+
+        controller.terminarSessao();
+    }
+
+    //==========================================================
+    // AUTOMAÇÕES DA CASA
+
+    private static void criarAutomacoesDaCasa(DomusController controller)
+            throws UserNotFoundException, HouseNotFoundException {
+
+        controller.autenticar("u1", "1234");
+
+        // automação 1: se está a chover, fecha as cortinas
+        Automation fecharCortinas = new Automation(
+                "auto1",
+                "Fechar Cortinas se Chover",
+                "Fecha as cortinas quando o sensor de chuva deteta pluviosidade",
+                "d11", 2.0, "desligar");
+        fecharCortinas.adicionarDispositivo("d3");
+        fecharCortinas.adicionarDispositivo("d6");
+        controller.adicionarAutomacao("c1", fecharCortinas);
+
+        // automação 2: se está escuro, liga as luzes
+        Automation ligarLuzes = new Automation(
+                "auto2",
+                "Ligar Luzes se Estiver Escuro",
+                "Liga as luzes quando a luminosidade desce abaixo do limiar",
+                "d10", 100.0, "ligar");
+        ligarLuzes.adicionarDispositivo("d1");
+        ligarLuzes.adicionarDispositivo("d2");
+        controller.adicionarAutomacao("c1", ligarLuzes);
 
         controller.terminarSessao();
     }
