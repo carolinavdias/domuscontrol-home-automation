@@ -1,12 +1,11 @@
 package model.automations;
 
-import model.devices.Device;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-
-// as automacoes ficam associadas a casa mas sao criadas pelos utilizadores
+// uma automacao e uma condicao que quando verificada executa acoes sobre dispositivos
+// por exemplo se esta a chover entao fecha as cortinas (secao 4 do enunciado)
 public class Automation implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -16,55 +15,68 @@ public class Automation implements Serializable {
     private String descricaoCondicao;
     private boolean ativa;
 
-    // ids dos dispositivos que esta automação vai atuar quando a condição for verdade
+    // id do sensor que esta automacao observa
+    private String idSensor;
+
+    // valor a partir do qual a condicao e verdadeira
+    private double limiar;
+
+    // acao a executar nos dispositivos: "ligar" ou "desligar"
+    private String acao;
+
     private List<String> idsDispositivos;
 
-    // construtor principal
-    public Automation(String id, String nome, String descricaoCondicao) {
+    public Automation(String id, String nome, String descricaoCondicao,
+                      String idSensor, double limiar, String acao) {
         this.id = id;
         this.nome = nome;
         this.descricaoCondicao = descricaoCondicao;
+        this.idSensor = idSensor;
+        this.limiar = limiar;
+        this.acao = acao;
         this.ativa = true;
         this.idsDispositivos = new ArrayList<>();
     }
 
-    // construtor de copia
     public Automation(Automation outra) {
         this.id = outra.id;
         this.nome = outra.nome;
         this.descricaoCondicao = outra.descricaoCondicao;
+        this.idSensor = outra.idSensor;
+        this.limiar = outra.limiar;
+        this.acao = outra.acao;
         this.ativa = outra.ativa;
         this.idsDispositivos = new ArrayList<>(outra.idsDispositivos);
     }
 
-    // adiciona um dispositivo a lista de dispositivos afetados por esta automacao
     public void adicionarDispositivo(String idDispositivo) {
         if (idDispositivo == null || idDispositivo.isBlank())
             throw new IllegalArgumentException("O id do dispositivo não pode ser vazio.");
         this.idsDispositivos.add(idDispositivo);
     }
 
-    // verifica se a automacao deve ser ativada com base no valor do sensor
-    // este metodo vai ser chamado pelo ->controller<- quando o sensor atualizar o valor (!!!)
-    public boolean avaliarCondicao(double valorSensor, double limiar) {
+    // verifica se o valor atual do sensor ultrapassa o limiar definido
+    public boolean avaliarCondicao(double valorSensor) {
         return valorSensor >= limiar;
     }
 
-    // getters e setters
-    public String getId()                  { return id; }
-    public String getNome()                { return nome; }
-    public String getDescricaoCondicao()   { return descricaoCondicao; }
-    public boolean isAtiva()               { return ativa; }
+    public String getId()                    { return id; }
+    public String getNome()                  { return nome; }
+    public String getDescricaoCondicao()     { return descricaoCondicao; }
+    public boolean isAtiva()                 { return ativa; }
+    public String getIdSensor()              { return idSensor; }
+    public double getLimiar()                { return limiar; }
+    public String getAcao()                  { return acao; }
 
     public List<String> getIdsDispositivos() {
         return new ArrayList<>(idsDispositivos);
     }
 
-    public void setAtiva(boolean ativa)    { this.ativa = ativa; }
+    public void setAtiva(boolean ativa)      { this.ativa = ativa; }
 
     @Override
     public String toString() {
-        return String.format("Automação: %s | Condição: %s | Ativa: %s | Dispositivos afetados: %d",
+        return String.format("Automação: %s | Condição: %s | Ativa: %s | Dispositivos: %d",
             nome, descricaoCondicao, ativa ? "sim" : "não", idsDispositivos.size());
     }
 
@@ -81,7 +93,3 @@ public class Automation implements Serializable {
         return id.hashCode();
     }
 }
-
-
-// bg: uma automacao é uma condicao que quando verificada executa acoes sobre dispositivos
-// por ex:se esta a chover entao fecha as cortinas (ver na secção 4 do enunciado)
