@@ -4,6 +4,7 @@ import controller.DomusController;
 import exceptions.UserNotFoundException;
 import model.automations.Scenario;
 import model.users.User;
+import utils.UIColors;
 
 import java.util.List;
 import java.util.Scanner;
@@ -22,144 +23,127 @@ public class ScenarioMenu {
     public void mostrar() {
         boolean voltar = false;
         while (!voltar) {
-            System.out.println("\n┌──────────────────────────────────────┐");
-            System.out.println("│              Cenários                │");
-            System.out.println("├──────────────────────────────────────┤");
-            System.out.println("│  1. Listar os meus cenários          │");
-            System.out.println("│  2. Criar novo cenário               │");
-            System.out.println("│  3. Executar cenário                 │");
-            System.out.println("│  0. Voltar                           │");
-            System.out.println("└──────────────────────────────────────┘");
-            System.out.print("Opção: ");
+            String c = UIColors.BCYAN, y = UIColors.BYELLOW, r = UIColors.RESET;
+            System.out.println();
+            System.out.println(c + "  ┌──────────────────────────────────────┐" + r);
+            System.out.println(c + "  │" + r + "              Cenários                " + c + "│" + r);
+            System.out.println(c + "  ├──────────────────────────────────────┤" + r);
+            System.out.println(c + "  │" + r + "  " + y + "1" + r + ". Listar os meus cenários          " + c + "│" + r);
+            System.out.println(c + "  │" + r + "  " + y + "2" + r + ". Criar novo cenário               " + c + "│" + r);
+            System.out.println(c + "  │" + r + "  " + y + "3" + r + ". Executar cenário                 " + c + "│" + r);
+            System.out.println(c + "  │" + r + "  " + y + "0" + r + ". Voltar                           " + c + "│" + r);
+            System.out.println(c + "  └──────────────────────────────────────┘" + r);
+            System.out.print("  Opção: ");
 
-            String opcao = scanner.nextLine().trim();
-            switch (opcao) {
+            switch (scanner.nextLine().trim()) {
                 case "1": listarCenarios();  break;
                 case "2": criarCenario();    break;
                 case "3": executarCenario(); break;
                 case "0": voltar = true;     break;
-                default:  System.out.println("⚠ Opção inválida.");
+                default:  System.out.println("  " + UIColors.BYELLOW + "⚠ Opção inválida." + UIColors.RESET);
             }
         }
     }
 
-    // ==========================================================
-    // LISTA CENÁRIOS
+    //==========================================================
 
     private void listarCenarios() {
         try {
             User u = controller.getUtilizadorAtual();
             List<Scenario> cenarios = u.getCenarios();
-
             if (cenarios.isEmpty()) {
-                System.out.println("\n(Ainda não tens cenários criados.)");
+                System.out.println("\n  " + UIColors.DIM + "(Ainda não tens cenários criados.)" + UIColors.RESET);
                 return;
             }
-
-            System.out.println("\n── Os teus cenários ──");
+            System.out.println("\n" + UIColors.BCYAN + "  ── Os teus cenários ──" + UIColors.RESET);
             for (int i = 0; i < cenarios.size(); i++) {
                 Scenario c = cenarios.get(i);
-                System.out.printf("  %d. [%s] %s | %s | Ações: %d%n",
-                        i + 1, c.getId(), c.getNome(),
-                        c.getDescricao(), c.getAcoes().size());
+                System.out.printf("  " + UIColors.BYELLOW + "%d" + UIColors.RESET + ". [%s] %s | %s | Ações: %d%n",
+                        i + 1, c.getId(), c.getNome(), c.getDescricao(), c.getAcoes().size());
             }
         } catch (UserNotFoundException e) {
-            System.out.println("✗ Erro de sessão: " + e.getMessage());
+            System.out.println("  " + UIColors.BRED + "✗ Erro de sessão: " + e.getMessage() + UIColors.RESET);
         }
     }
 
-    // ==========================================================
-    // CRIA CENÁRIO
-
     private void criarCenario() {
-        System.out.println("\n── Criar Novo Cenário ──");
+        System.out.println("\n" + UIColors.BCYAN + "  ── Criar Novo Cenário ──" + UIColors.RESET);
 
-        System.out.print("ID do cenário (ex: sc5): ");
+        System.out.print("  ID do cenário (ex: sc5): ");
         String id = scanner.nextLine().trim();
 
-        System.out.print("Nome do cenário: ");
+        System.out.print("  Nome do cenário: ");
         String nome = scanner.nextLine().trim();
 
-        System.out.print("Descrição: ");
+        System.out.print("  Descrição: ");
         String descricao = scanner.nextLine().trim();
 
         Scenario cenario = new Scenario(id, nome, descricao);
 
-        System.out.println("\nAdiciona as ações (dispositivos a ligar/desligar).");
-        System.out.println("Escreve 'fim' no ID do dispositivo para terminar.");
-
+        System.out.println("\n  Adiciona as ações. Escreve 'fim' no ID para terminar.");
         while (true) {
-            System.out.print("ID do dispositivo (ou 'fim'): ");
+            System.out.print("  ID do dispositivo (ou 'fim'): ");
             String idDisp = scanner.nextLine().trim();
             if (idDisp.equalsIgnoreCase("fim")) break;
 
-            System.out.print("Ação (ligar/desligar): ");
+            System.out.print("  Ação (ligar/desligar): ");
             String acao = scanner.nextLine().trim().toLowerCase();
 
             try {
                 cenario.adicionarAcao(idDisp, acao);
-                System.out.println("  ✓ Ação adicionada.");
+                System.out.println("  " + UIColors.BGREEN + "✓ Ação adicionada." + UIColors.RESET);
             } catch (IllegalArgumentException e) {
-                System.out.println("  ✗ " + e.getMessage());
+                System.out.println("  " + UIColors.BRED + "✗ " + e.getMessage() + UIColors.RESET);
             }
         }
 
         try {
             controller.adicionarCenarioAoUtilizador(cenario);
-            System.out.println("✓ Cenário '" + nome + "' criado e guardado com sucesso!");
+            System.out.println("  " + UIColors.BGREEN + "✓ Cenário '" + nome + "' criado com sucesso!" + UIColors.RESET);
         } catch (UserNotFoundException e) {
-            System.out.println("✗ Erro ao guardar cenário: " + e.getMessage());
+            System.out.println("  " + UIColors.BRED + "✗ Erro ao guardar cenário: " + e.getMessage() + UIColors.RESET);
         }
     }
 
-    // ==========================================================
-    // EXECUTA CENÁRIO
-
     private void executarCenario() {
-        System.out.println("\n── Executar Cenário ──");
+        System.out.println("\n" + UIColors.BCYAN + "  ── Executar Cenário ──" + UIColors.RESET);
 
         try {
             User u = controller.getUtilizadorAtual();
             List<Scenario> cenarios = u.getCenarios();
 
             if (cenarios.isEmpty()) {
-                System.out.println("(Não tens cenários disponíveis.)");
+                System.out.println("  " + UIColors.DIM + "(Não tens cenários disponíveis.)" + UIColors.RESET);
                 return;
             }
 
-            System.out.println("Cenários disponíveis:");
-            for (int i = 0; i < cenarios.size(); i++) {
-                System.out.printf("  %d. [%s] %s — %s%n",
-                        i + 1,
-                        cenarios.get(i).getId(),
-                        cenarios.get(i).getNome(),
-                        cenarios.get(i).getDescricao());
-            }
+            System.out.println("  Cenários disponíveis:");
+            for (int i = 0; i < cenarios.size(); i++)
+                System.out.printf("  " + UIColors.BYELLOW + "%d" + UIColors.RESET + ". [%s] %s — %s%n",
+                        i + 1, cenarios.get(i).getId(),
+                        cenarios.get(i).getNome(), cenarios.get(i).getDescricao());
 
-            System.out.print("Número do cenário a executar: ");
+            System.out.print("  Número do cenário a executar: ");
             int escolha;
             try {
                 escolha = Integer.parseInt(scanner.nextLine().trim()) - 1;
             } catch (NumberFormatException e) {
-                System.out.println("✗ Opção inválida.");
+                System.out.println("  " + UIColors.BRED + "✗ Opção inválida." + UIColors.RESET);
                 return;
             }
 
             if (escolha < 0 || escolha >= cenarios.size()) {
-                System.out.println("✗ Cenário inexistente.");
+                System.out.println("  " + UIColors.BRED + "✗ Cenário inexistente." + UIColors.RESET);
                 return;
             }
 
-            String idCenario = cenarios.get(escolha).getId();
+            String idCenario  = cenarios.get(escolha).getId();
             String nomeCenario = cenarios.get(escolha).getNome();
-
             controller.executarCenario(idCenario);
-            System.out.println("✓ Cenário '" + nomeCenario + "' executado com sucesso!");
+            System.out.println("  " + UIColors.BGREEN + "✓ Cenário '" + nomeCenario + "' executado com sucesso!" + UIColors.RESET);
 
-        } catch (UserNotFoundException e) {
-            System.out.println("✗ Erro de sessão: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-            System.out.println("✗ " + e.getMessage());
+        } catch (UserNotFoundException | IllegalArgumentException e) {
+            System.out.println("  " + UIColors.BRED + "✗ " + e.getMessage() + UIColors.RESET);
         }
     }
 }
