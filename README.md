@@ -1,92 +1,111 @@
 <div align="center">
 
-# 🏠 𝑫𝒐𝒎𝒖𝒔𝑪𝒐𝒏𝒕𝒓𝒐𝒍
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/icon-dark.svg">
+  <img src="assets/icon-light.svg" height="110" alt="">
+</picture>
 
-**Programação Orientada aos Objetos · Universidade do Minho · 2025/2026**
+<h1>𝘿𝙤𝙢𝙪𝙨𝘾𝙤𝙣𝙩𝙧𝙤𝙡</h1>
+<h3>Smart Home Automation System</h3>
 
-![Language](https://img.shields.io/badge/linguagem-Java-red?style=flat-square)
-![Pattern](https://img.shields.io/badge/padrão-MVC-blue?style=flat-square)
-![Interface](https://img.shields.io/badge/interface-CLI-green?style=flat-square)
-![Persistence](https://img.shields.io/badge/persistência-Serializable-purple?style=flat-square)
+![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![MVC](https://img.shields.io/badge/MVC-6c757d?style=for-the-badge)
+![draw.io](https://img.shields.io/badge/UML-draw.io-F08705?style=for-the-badge&logo=diagramsdotnet&logoColor=white)
 
-*Sistema de automação doméstica com gestão de dispositivos, automações, escalonamentos, cenários e sugestões automáticas baseadas no histórico de interações.*
-
-</div>
-
----
-<div align="center">
-
-## 👥 Grupo 99
-
-| Nome | Número |
-|---|---|
-| Ana Patrícia da Silva Machado | a111661 |
-| Carolina Francisca Vieira Dias | a111179 |
+*Academic project developed for **Programação Orientada aos Objetos** @ University of Minho*  
+*Final grade: **16/20** ⭐*
 
 </div>
 
 ---
 
-## ⚙️ Compilar
+## 🔌 About
+
+For Object Oriented Programming we built a smart home system in Java that runs entirely in the terminal. You can create houses and rooms, add lamps, speakers, curtains and other devices, and control them one by one or let the house do it for you with automations, schedulings and scenarios.
+
+The whole thing follows the **MVC** pattern, and a big part of the work was getting the class design right: what should be abstract, what should inherit from what, and how to keep the model completely separate from the menus.
+
+---
+
+## ⚡ What it does
+
+- users with a different role in each house (you can be admin at home and a regular user at a friend's)
+- 7 types of devices (lamps, colour lamps, speakers, curtains, garage gates, relays and sockets) and 2 sensors (rain and luminosity)
+- automations that react to sensor readings
+- schedulings that run at a certain hour of the day
+- scenarios that control several devices at once
+- usage statistics for each device: energy, activations and time on
+- a simulated clock, so we could test days of use in a few minutes
+- saving and loading the whole state of the app to a file
+- **automatic suggestions** based on how the house is used
+
+---
+
+## 🧩 My part
+
+I built the base architecture, the device hierarchy, houses and rooms, the automations, the statistics and the saving and loading of the app state, and I drew the UML diagram. The suggestion engine we built together, and I also put the report together.
+
+---
+
+## 💡 The fun part
+
+My favourite feature is the suggestion engine. The app keeps a record of every interaction, and if you turn on the same lamp at around 8 pm on three different days, it notices and suggests creating a scheduling for it. It also looks for sensors and devices that tend to change together within a few minutes, and suggests an automation. You can accept or reject each suggestion.
+
+My favourite bug: when we gave the menus colours, all the boxes around them came out crooked. The colour codes are invisible on screen, but Java still counts them as characters, so the padding was all wrong. We ended up calculating the width using only the characters you can actually see.
+
+---
+
+## 🚀 How to Run
 
 ```bash
+# Compile
 javac -d bin -sourcepath src src/Main.java
-```
 
----
-
-## 🚀 Utilização
-
-**1. Arrancar a aplicação**
-```bash
+# Run
 java -cp bin Main
 ```
 
-O programa inicia com um estado de teste populado automaticamente.
+The app starts with some test data already loaded. You can log in with:
 
-**2. Iniciar sessão (estado de teste)**
-- Administradora: `u1` / `1234` (Ana Silva)
-- Regular: `u2` / `5678` (Bruno Costa)
+| User | Password | Role |
+|---|---|---|
+| `u1` | `1234` | Admin |
+| `u2` | `5678` | Regular |
 
-**3. Carregar estado de apresentação**
-No menu principal, opção **9 - Carregar estado**, indicar: `estado_apresentacao.bin`
+To load the state we used in the defence, choose option **9** in the main menu and type `estado_apresentacao.bin`.
 
 ---
 
-## 📁 Estrutura
+## 🗂️ Project Structure
 
 ```
 .
 ├── src/
 │   ├── Main.java
-│   ├── controller/                   # DomusController, lógica central
-│   ├── exceptions/                   # exceções personalizadas
+│   ├── controller/          # DomusController, the central hub
 │   ├── model/
-│   │   ├── devices/                  # hierarquia de dispositivos
-│   │   ├── house/                    # casas e divisões
-│   │   ├── users/                    # utilizadores e papéis
-│   │   └── automations/              # automações, escalonamentos, cenários, sugestões
-│   ├── utils/                        # relógio simulado, motor de sugestões, estado de teste
-│   └── view/                         # menus em modo texto
-├── docs/
-│   ├── Relatorio_DomusControl_G099.pdf   # relatório do projeto
-│   └── DomusControl_UML_G99.pdf          # diagrama UML completo
-├── estado_apresentacao.bin           # estado para a defesa
-└── README.md
+│   │   ├── devices/         # Device, Actuator, Sensor and every device
+│   │   ├── house/           # House and Room
+│   │   ├── users/           # User and Role
+│   │   └── automations/     # automations, schedulings, scenarios, suggestions
+│   ├── view/                # terminal menus
+│   ├── exceptions/          # custom exceptions
+│   └── utils/               # SimulatedClock, SuggestionEngine, TestData, UIColors
+├── docs/                    # report and full UML diagram (in Portuguese)
+└── estado_apresentacao.bin  # saved state for the defence
 ```
 
 ---
 
----
+## 🛠️ Tech Stack
 
-## 📄 Documentação
-
-O relatório completo encontra-se em [`docs/Relatorio_DomusControl_G099.pdf`](docs/Relatorio_DomusControl_G099.pdf). O diagrama UML em alta resolução está em [`docs/DomusControl_UML_G99.pdf`](docs/DomusControl_UML_G99.pdf).
+`Java` · `OOP` · `MVC` · `Inheritance & Polymorphism` · `Java Serialization` · `UML` · `draw.io`
 
 ---
 
-<div align="center">
+## 👩‍💻 Authors
 
-*Desenvolvido para a UC de Programação Orientada aos Objetos — LEI, Universidade do Minho · Grupo 99 · 2025/2026*
+**Carolina Dias** · [@carolinavdias](https://github.com/carolinavdias)  
+**Ana Patrícia Machado** · [@apatriciamachado](https://github.com/apatriciamachado)
 
-</div>
+<p align="center"><i>tested on a lot of imaginary lamps</i></p>
