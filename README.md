@@ -13,7 +13,6 @@
 ![draw.io](https://img.shields.io/badge/UML-draw.io-F08705?style=for-the-badge&logo=diagramsdotnet&logoColor=white)
 
 *Academic project developed for **Programação Orientada aos Objetos** @ University of Minho*  
-*Final grade: **16/20** ⭐*
 
 </div>
 
